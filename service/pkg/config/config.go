@@ -55,7 +55,6 @@ var _ Provider = (*ViperProvider)(nil)
 // 全局配置实例及互斥锁
 var (
 	instance     Provider
-	instanceOnce sync.Once
 	instanceLock sync.RWMutex
 )
 
@@ -189,7 +188,6 @@ func Reset() {
 	instanceLock.Lock()
 	defer instanceLock.Unlock()
 	instance = nil
-	instanceOnce = sync.Once{}
 }
 
 // Provider接口实现
