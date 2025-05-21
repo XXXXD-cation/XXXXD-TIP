@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/XXXXD-cation/XXXXD-TIP/service/pkg/errors"
 	httputil "github.com/XXXXD-cation/XXXXD-TIP/service/pkg/http"
@@ -131,13 +132,24 @@ func errorHandlerMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 func main() {
 	// 注册路由
-	http.HandleFunc("/api/users", errorHandlerMiddleware(authMiddleware(getUserHandler)))
-	http.HandleFunc("/api/users/create", errorHandlerMiddleware(authMiddleware(createUserHandler)))
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/users", errorHandlerMiddleware(authMiddleware(getUserHandler)))
+	mux.HandleFunc("/api/users/create", errorHandlerMiddleware(authMiddleware(createUserHandler)))
+
+	// 创建带有超时设置的HTTP服务器
+	server := &http.Server{
+		Addr:              ":8088",
+		Handler:           mux,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       30 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
 
 	// 启动服务器
 	fmt.Println("启动HTTP服务器在 :8088 端口...")
 	fmt.Println("示例API:")
 	fmt.Println("1. GET /api/users?id=1 (需要 Authorization: Bearer valid-token 头)")
 	fmt.Println("2. POST /api/users/create (需要 Authorization: Bearer valid-token 头和JSON请求体)")
-	log.Fatal(http.ListenAndServe(":8088", nil))
+	log.Fatal(server.ListenAndServe())
 }
