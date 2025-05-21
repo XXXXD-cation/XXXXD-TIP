@@ -99,15 +99,21 @@ jobs:
       - name: 构建并推送后端服务镜像
         run: |
           for service_dir in service/*/; do
-            service_name=$(basename "$service_dir")
-            echo "Building $service_name..."
-            
-            docker buildx build \
-              --platform linux/amd64,linux/arm64 \
-              -t ${{ secrets.DOCKER_USERNAME }}/tip-${service_name}:${{ steps.version.outputs.VERSION }} \
-              -t ${{ secrets.DOCKER_USERNAME }}/tip-${service_name}:${{ steps.version.outputs.RELEASE_VERSION }} \
-              --push \
-              -f ${service_dir}Dockerfile ${service_dir}
+            if [ -d "$service_dir" ]; then
+              service_name=$(basename "$service_dir")
+              echo "Building $service_name..."
+              
+              if [ -f "${service_dir}Dockerfile" ]; then
+                docker buildx build \
+                  --platform linux/amd64,linux/arm64 \
+                  -t ${{ secrets.DOCKER_USERNAME }}/tip-${service_name}:${{ steps.version.outputs.VERSION }} \
+                  -t ${{ secrets.DOCKER_USERNAME }}/tip-${service_name}:${{ steps.version.outputs.RELEASE_VERSION }} \
+                  --push \
+                  -f ${service_dir}Dockerfile ${service_dir}
+              else
+                echo "Dockerfile not found for $service_name, skipping..."
+              fi
+            fi
           done
       
       # 构建并推送前端镜像
@@ -124,17 +130,19 @@ jobs:
             cd frontend && npm ci && npm run build
           fi
       
-      - name: 构建并推送前端镜像
-        if: ${{ hashFiles('frontend/Dockerfile') != '' }}
-        uses: docker/build-push-action@v4
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/tip-frontend:${{ steps.version.outputs.VERSION }}
-            ${{ secrets.DOCKER_USERNAME }}/tip-frontend:${{ steps.version.outputs.RELEASE_VERSION }}
+      - name: 检查Dockerfile并构建前端镜像
+        run: |
+          if [ -d "frontend" ] && [ -f "frontend/Dockerfile" ]; then
+            echo "Frontend Dockerfile found, building image..."
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
+              -t ${{ secrets.DOCKER_USERNAME }}/tip-frontend:${{ steps.version.outputs.VERSION }} \
+              -t ${{ secrets.DOCKER_USERNAME }}/tip-frontend:${{ steps.version.outputs.RELEASE_VERSION }} \
+              --push \
+              -f frontend/Dockerfile frontend
+          else
+            echo "Frontend Dockerfile not found, skipping frontend image build..."
+          fi
   
   create-release:
     name: 创建GitHub发布版本
