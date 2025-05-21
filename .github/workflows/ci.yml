@@ -232,6 +232,15 @@ jobs:
             echo "docker_compose_exists=false" >> $GITHUB_OUTPUT
           fi
       
+      - name: 安装Docker Compose
+        if: ${{ steps.check-docker.outputs.docker_compose_exists == 'true' }}
+        run: |
+          echo "安装Docker Compose..."
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+        continue-on-error: true
+      
       - name: 构建 Docker 镜像
         if: ${{ steps.check-docker.outputs.docker_compose_exists == 'true' }}
         run: |

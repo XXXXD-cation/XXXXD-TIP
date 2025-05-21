@@ -105,6 +105,27 @@ jobs:
         run: cd frontend && npm run test:unit
         continue-on-error: true
 
+      # 检查Docker环境
+      - name: 检查Docker环境
+        id: check-docker
+        run: |
+          if [ -f "docker-compose.yml" ]; then
+            echo "docker_compose_exists=true" >> $GITHUB_OUTPUT
+            echo "检测到docker-compose.yml文件"
+          else
+            echo "docker_compose_exists=false" >> $GITHUB_OUTPUT
+            echo "未检测到docker-compose.yml文件，跳过Docker相关操作"
+          fi
+      
+      - name: 安装Docker Compose
+        if: ${{ steps.check-docker.outputs.docker_compose_exists == 'true' }}
+        run: |
+          echo "安装Docker Compose..."
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+        continue-on-error: true
+
   build-and-push:
     name: 构建和推送镜像
     needs: lint-and-test
@@ -132,6 +153,27 @@ jobs:
           else
             echo "frontend_exists=false" >> $GITHUB_OUTPUT
           fi
+      
+      # 检查Docker环境
+      - name: 检查Docker环境
+        id: check-docker
+        run: |
+          if [ -f "docker-compose.yml" ]; then
+            echo "docker_compose_exists=true" >> $GITHUB_OUTPUT
+            echo "检测到docker-compose.yml文件"
+          else
+            echo "docker_compose_exists=false" >> $GITHUB_OUTPUT
+            echo "未检测到docker-compose.yml文件，跳过Docker相关操作"
+          fi
+      
+      - name: 安装Docker Compose
+        if: ${{ steps.check-docker.outputs.docker_compose_exists == 'true' }}
+        run: |
+          echo "安装Docker Compose..."
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+        continue-on-error: true
       
       - name: 提取版本信息
         id: version
