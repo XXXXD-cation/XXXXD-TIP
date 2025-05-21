@@ -13,16 +13,19 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// contextKey 是用于context的键类型，避免与其他包的键冲突
+type contextKey string
+
 // 上下文中存储的键
 const (
 	// TraceIDKey 是上下文中存储跟踪ID的键
-	TraceIDKey = "trace_id"
+	TraceIDKey = contextKey("trace_id")
 	// RequestIDKey 是上下文中存储请求ID的键
-	RequestIDKey = "request_id"
+	RequestIDKey = contextKey("request_id")
 	// SpanIDKey 是上下文中存储跨度ID的键
-	SpanIDKey = "span_id"
+	SpanIDKey = contextKey("span_id")
 	// ParentSpanIDKey 是上下文中存储父跨度ID的键
-	ParentSpanIDKey = "parent_span_id"
+	ParentSpanIDKey = contextKey("parent_span_id")
 )
 
 // Config 日志配置

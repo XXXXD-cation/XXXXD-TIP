@@ -15,7 +15,8 @@ import (
 // 测试全局日志实例初始化
 func TestInit(t *testing.T) {
 	// 验证初始化后的全局日志实例不为空
-	if &globalLogger == nil {
+	// 注意：不能直接检查地址是否为nil，只检查是否能正常使用
+	if (zerolog.Logger{}) == globalLogger {
 		t.Error("全局日志实例未正确初始化")
 	}
 }
