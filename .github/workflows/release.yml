@@ -125,7 +125,7 @@ jobs:
           fi
       
       - name: 构建并推送前端镜像
-        if: hashFiles('frontend/Dockerfile') != ''
+        if: ${{ hashFiles('frontend/Dockerfile') != '' }}
         uses: docker/build-push-action@v4
         with:
           context: ./frontend
