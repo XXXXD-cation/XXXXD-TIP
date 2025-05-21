@@ -13,12 +13,23 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # 检查是否存在Go模块
+      - name: 检查Go模块
+        id: check-go
+        run: |
+          if [ -f "go.mod" ] || [ -d "service" -a -f "service/go.mod" ]; then
+            echo "go_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "go_exists=false" >> $GITHUB_OUTPUT
+          fi
+
       # Go 代码规范检查
       - name: 设置 Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.21'
-          cache: true
+          # 只在go.mod存在时启用缓存
+          cache: ${{ steps.check-go.outputs.go_exists == 'true' }}
       
       - name: 检查Go模块并安装golangci-lint
         run: |
@@ -93,11 +104,22 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
+      # 检查是否存在Go模块
+      - name: 检查Go模块
+        id: check-go
+        run: |
+          if [ -d "service" -a -f "service/go.mod" ]; then
+            echo "go_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "go_exists=false" >> $GITHUB_OUTPUT
+          fi
+      
       - name: 设置 Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.21'
-          cache: true
+          # 只在go.mod存在时启用缓存
+          cache: ${{ steps.check-go.outputs.go_exists == 'true' }}
       
       - name: 检查Go服务和安装依赖
         run: |
