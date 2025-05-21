@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Go代码风格检查
+if [ -x "$(command -v golangci-lint)" ] && [ -d "./cmd" -o -d "./pkg" -o -d "./internal" ]; then
+  echo "正在检查Go代码风格..."
+  golangci-lint run ./...
+  if [ $? -ne 0 ]; then
+    echo "Go代码风格检查失败，请修复以上问题后再提交"
+    exit 1
+  fi
+fi
+
+# JavaScript/Vue代码风格检查
+if [ -x "$(command -v eslint)" ] && [ -d "./frontend" -o -f "./package.json" ]; then
+  echo "正在检查JavaScript/Vue代码风格..."
+  npx eslint --ext .js,.vue,.ts src
+  if [ $? -ne 0 ]; then
+    echo "JavaScript/Vue代码风格检查失败，请修复以上问题后再提交"
+    exit 1
+  fi
+fi
+
+# 成功结束
+echo "代码风格检查通过"
+exit 0 

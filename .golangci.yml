@@ -1,0 +1,76 @@
+linters:
+  # 启用的linters
+  enable:
+    - errcheck        # 检查未处理的错误
+    - gosimple        # 代码简化建议
+    - govet           # 报告可疑的构造
+    - ineffassign     # 检测未使用的赋值
+    - staticcheck     # Go静态分析
+    - typecheck       # 类型检查
+    - unused          # 检查未使用的常量、变量、函数和类型
+    - gosec           # 检查常见的安全问题
+    - misspell        # 拼写检查
+    - gofmt           # 检查是否使用gofmt格式化
+    - goimports       # 检查导入顺序
+    - revive          # 代码质量检查
+    - unconvert       # 删除不必要的类型转换
+    - whitespace      # 空白检查
+    
+# 全局配置
+run:
+  # 超时设置
+  timeout: 5m
+  # 默认并行数
+  concurrency: 4
+  # 要分析的包
+  build-tags:
+    - integration
+
+# 输出配置
+output:
+  # 排序问题顺序（按行号）
+  sort-results: true
+  # 打印所有问题的行
+  print-issued-lines: true
+  # 打印linter名字
+  print-linter-name: true
+
+# 特定linter配置
+linters-settings:
+  govet:
+    check-shadowing: true
+  gocyclo:
+    min-complexity: 15
+  dupl:
+    threshold: 100
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  misspell:
+    locale: US
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+        disabled: false
+        arguments:
+          - "checkPrivateReceivers"
+          - "disableStutteringCheck"
+
+# 问题严重性
+issues:
+  # 最大报告的问题数
+  max-issues-per-linter: 0
+  # 最大同样的问题数
+  max-same-issues: 0
+  # 排除规则
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+    - path: doc\.go
+      linters:
+        - gocyclo 
