@@ -1,0 +1,19 @@
+# 应用配置示例
+server:
+  port: 8080
+  host: localhost
+  timeout: 30
+
+database:
+  driver: postgres
+  host: localhost
+  port: 5432
+  username: tip_user
+  password: tip_password
+  database: tip_db
+
+logging:
+  level: info
+  output: console
+  pretty: true
+  with_caller: true
