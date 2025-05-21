@@ -64,4 +64,4 @@ func TestConnectionInfoInterface(t *testing.T) {
 	if info.String() != "test-connection-string" {
 		t.Errorf("String() = %v, 期望 %v", info.String(), "test-connection-string")
 	}
-} 
+}

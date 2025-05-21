@@ -94,7 +94,7 @@ func postgresExample(ctx context.Context) error {
 
 	// 自动迁移模型
 	log.Info().Msg("迁移User模型...")
-	
+
 	// 先尝试删除表以避免迁移冲突
 	if pgClient.DB().Migrator().HasTable(&User{}) {
 		log.Info().Msg("表已存在，先删除...")
@@ -102,7 +102,7 @@ func postgresExample(ctx context.Context) error {
 			return fmt.Errorf("删除表失败: %w", err)
 		}
 	}
-	
+
 	if err := pgClient.AutoMigrate(&User{}); err != nil {
 		return fmt.Errorf("迁移模型失败: %w", err)
 	}
@@ -315,4 +315,4 @@ func elasticsearchExample(ctx context.Context) error {
 
 	log.Info().Msg("Elasticsearch示例完成")
 	return nil
-} 
+}

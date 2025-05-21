@@ -59,4 +59,4 @@ type Client interface {
 	Ping(ctx context.Context) error
 	// Stats 返回连接统计信息
 	Stats() interface{}
-} 
+}

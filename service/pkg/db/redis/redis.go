@@ -23,15 +23,15 @@ type Config struct {
 	Addrs []string
 
 	// 哨兵配置
-	MasterName     string
-	SentinelAddrs  []string
+	MasterName       string
+	SentinelAddrs    []string
 	SentinelPassword string
 
 	// 通用配置
-	Username    string
-	MaxRetries  int
-	DialTimeout time.Duration
-	ReadTimeout time.Duration
+	Username     string
+	MaxRetries   int
+	DialTimeout  time.Duration
+	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 
 	// 是否使用集群模式
@@ -200,7 +200,12 @@ func (c *Client) Connect(ctx context.Context) error {
 	exponentialBackOff.InitialInterval = c.opts.RetryDelay
 
 	// 执行带有重试的操作
-	err := backoff.Retry(operation, backoff.WithMaxRetries(exponentialBackOff, uint64(c.opts.RetryAttempts)))
+	var retryBackOff backoff.BackOff = exponentialBackOff
+	if c.opts.RetryAttempts > 0 {
+		// 安全转换，避免大整数溢出
+		retryBackOff = backoff.WithMaxRetries(exponentialBackOff, uint64(c.opts.RetryAttempts))
+	}
+	err := backoff.Retry(operation, retryBackOff)
 	if err != nil {
 		return fmt.Errorf("连接Redis失败: %w", err)
 	}
@@ -301,4 +306,4 @@ func (c *Client) Expire(ctx context.Context, key string, expiration time.Duratio
 	}
 
 	return c.client.Expire(ctx, key, expiration).Err()
-} 
+}

@@ -39,24 +39,24 @@ func callExternalService(ctx context.Context, serviceName string) {
 	// 从父上下文创建子Span上下文
 	childSpanID := uuid.New().String()
 	parentSpanID, _ := ctx.Value(log.SpanIDKey).(string)
-	
+
 	childCtx := ctx
 	if parentSpanID != "" {
 		childCtx = log.WithParentSpanID(ctx, parentSpanID)
 	}
 	childCtx = log.WithSpanID(childCtx, childSpanID)
-	
+
 	// 从子上下文获取日志记录器
 	logger := log.FromContext(childCtx)
-	
+
 	// 记录服务调用
 	logger.Info().
 		Str("external_service", serviceName).
 		Msg("调用外部服务")
-	
+
 	// 模拟处理时间
 	time.Sleep(50 * time.Millisecond)
-	
+
 	// 记录服务调用完成
 	logger.Info().
 		Str("external_service", serviceName).
@@ -91,22 +91,22 @@ func main() {
 	traceID := uuid.New().String()
 	requestID := uuid.New().String()
 	spanID := uuid.New().String()
-	
+
 	ctx := context.Background()
 	ctx = log.WithTraceID(ctx, traceID)
 	ctx = log.WithRequestID(ctx, requestID)
 	ctx = log.WithSpanID(ctx, spanID)
-	
+
 	// 处理请求
 	handleRequest(ctx, "/api/v1/users")
-	
+
 	// 模拟错误日志
 	log.Error().
 		Str("module", "database").
 		Err(fmt.Errorf("connection timeout")).
 		Msg("数据库连接失败")
-	
+
 	log.Info().
 		Int("processed_requests", 1).
 		Msg("应用正常退出")
-} 
+}

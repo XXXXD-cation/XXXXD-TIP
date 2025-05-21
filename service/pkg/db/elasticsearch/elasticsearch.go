@@ -162,17 +162,17 @@ func (c *Client) Connect(ctx context.Context) error {
 		case <-ctx.Done():
 			return backoff.Permanent(ctx.Err())
 		default:
-			res, err := client.Info()
-			if err != nil {
-				log.Error().Err(err).Str("dsn", c.config.String()).Msg("连接Elasticsearch失败")
-				return err
+			infoRes, infoErr := client.Info()
+			if infoErr != nil {
+				log.Error().Err(infoErr).Str("dsn", c.config.String()).Msg("连接Elasticsearch失败")
+				return infoErr
 			}
-			defer res.Body.Close()
+			defer infoRes.Body.Close()
 
-			if res.IsError() {
-				err = fmt.Errorf("Elasticsearch错误: %s", res.String())
-				log.Error().Err(err).Str("dsn", c.config.String()).Msg("连接Elasticsearch失败")
-				return err
+			if infoRes.IsError() {
+				resErr := fmt.Errorf("Elasticsearch错误: %s", infoRes.String())
+				log.Error().Err(resErr).Str("dsn", c.config.String()).Msg("连接Elasticsearch失败")
+				return resErr
 			}
 
 			return nil
@@ -185,7 +185,12 @@ func (c *Client) Connect(ctx context.Context) error {
 	exponentialBackOff.InitialInterval = c.opts.RetryDelay
 
 	// 执行带有重试的操作
-	err = backoff.Retry(operation, backoff.WithMaxRetries(exponentialBackOff, uint64(c.opts.RetryAttempts)))
+	var retryBackOff backoff.BackOff = exponentialBackOff
+	if c.opts.RetryAttempts > 0 {
+		// 安全转换，避免大整数溢出
+		retryBackOff = backoff.WithMaxRetries(exponentialBackOff, uint64(c.opts.RetryAttempts))
+	}
+	err = backoff.Retry(operation, retryBackOff)
 	if err != nil {
 		return fmt.Errorf("连接Elasticsearch失败: %w", err)
 	}
@@ -418,4 +423,4 @@ func (c *Client) Search(ctx context.Context, index string, query map[string]inte
 	}
 
 	return result, nil
-} 
+}

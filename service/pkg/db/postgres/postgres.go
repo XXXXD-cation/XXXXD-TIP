@@ -73,12 +73,12 @@ var _ db.Client = (*Client)(nil)
 
 // Stats 表示数据库连接统计信息
 type Stats struct {
-	OpenConnections int
-	InUse           int
-	Idle            int
-	WaitCount       int64
-	WaitDuration    time.Duration
-	MaxIdleClosed   int64
+	OpenConnections   int
+	InUse             int
+	Idle              int
+	WaitCount         int64
+	WaitDuration      time.Duration
+	MaxIdleClosed     int64
 	MaxLifetimeClosed int64
 }
 
@@ -142,7 +142,12 @@ func (c *Client) Connect(ctx context.Context) error {
 	exponentialBackOff.InitialInterval = c.opts.RetryDelay
 
 	// 执行带有重试的操作
-	err = backoff.Retry(operation, backoff.WithMaxRetries(exponentialBackOff, uint64(c.opts.RetryAttempts)))
+	var retryBackOff backoff.BackOff = exponentialBackOff
+	if c.opts.RetryAttempts > 0 {
+		// 安全转换，避免大整数溢出
+		retryBackOff = backoff.WithMaxRetries(exponentialBackOff, uint64(c.opts.RetryAttempts))
+	}
+	err = backoff.Retry(operation, retryBackOff)
 	if err != nil {
 		return fmt.Errorf("连接PostgreSQL失败: %w", err)
 	}
@@ -220,12 +225,12 @@ func (c *Client) Stats() interface{} {
 
 	stats := sqlDB.Stats()
 	return Stats{
-		OpenConnections:  stats.OpenConnections,
-		InUse:            stats.InUse,
-		Idle:             stats.Idle,
-		WaitCount:        stats.WaitCount,
-		WaitDuration:     stats.WaitDuration,
-		MaxIdleClosed:    stats.MaxIdleClosed,
+		OpenConnections:   stats.OpenConnections,
+		InUse:             stats.InUse,
+		Idle:              stats.Idle,
+		WaitCount:         stats.WaitCount,
+		WaitDuration:      stats.WaitDuration,
+		MaxIdleClosed:     stats.MaxIdleClosed,
 		MaxLifetimeClosed: stats.MaxLifetimeClosed,
 	}
 }
@@ -255,4 +260,4 @@ type logAdapter struct{}
 // Printf 实现GORM日志接口
 func (l *logAdapter) Printf(format string, args ...interface{}) {
 	log.Debug().Msgf(format, args...)
-} 
+}
