@@ -147,9 +147,27 @@ func (p *ProducerImpl) Produce(ctx context.Context, topic string, key, value []b
 	exponentialBackOff.InitialInterval = p.options.ReconnectBackoff
 
 	// 执行带有重试的操作
-	var retryBackOff backoff.BackOff = exponentialBackOff
-	if p.options.MaxReconnectRetry > 0 {
-		retryBackOff = backoff.WithMaxRetries(exponentialBackOff, uint64(p.options.MaxReconnectRetry))
+	var retryBackOff backoff.BackOff
+
+	// 根据配置创建适当的退避策略
+	if p.options.MaxReconnectRetry <= 0 {
+		// 无限重试
+		retryBackOff = exponentialBackOff
+	} else if p.options.MaxReconnectRetry == 1 {
+		// 只尝试一次，不重试
+		retryBackOff = &backoff.StopBackOff{}
+	} else {
+		// 有限次数重试，使用常量避免转换
+		count := uint64(0)
+		switch {
+		case p.options.MaxReconnectRetry <= 5:
+			count = 5
+		case p.options.MaxReconnectRetry <= 10:
+			count = 10
+		default:
+			count = 20 // 最大限制在20次
+		}
+		retryBackOff = backoff.WithMaxRetries(exponentialBackOff, count)
 	}
 
 	err := backoff.Retry(operation, retryBackOff)

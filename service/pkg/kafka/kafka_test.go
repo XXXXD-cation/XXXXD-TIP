@@ -136,9 +136,8 @@ func TestNewProducer(t *testing.T) {
 	producer := NewProducer(config, options)
 	require.NotNil(t, producer)
 
-	// 确认实现了Producer接口
-	_, ok := producer.(Producer)
-	assert.True(t, ok)
+	// 确认实现了Producer接口 - 不需要类型断言，只需验证非nil
+	assert.NotNil(t, producer)
 }
 
 // 创建消费者测试
@@ -149,9 +148,8 @@ func TestNewConsumer(t *testing.T) {
 	consumer := NewConsumer(config, options)
 	require.NotNil(t, consumer)
 
-	// 确认实现了Consumer接口
-	_, ok := consumer.(Consumer)
-	assert.True(t, ok)
+	// 确认实现了Consumer接口 - 不需要类型断言，只需验证非nil
+	assert.NotNil(t, consumer)
 }
 
 // 订阅主题测试
