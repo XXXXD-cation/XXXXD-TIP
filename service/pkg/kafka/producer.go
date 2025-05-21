@@ -10,6 +10,7 @@ import (
 	"github.com/XXXXD-cation/XXXXD-TIP/service/pkg/log"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/segmentio/kafka-go"
+
 	// 不再使用compress包，避免版本兼容性问题
 	"github.com/segmentio/kafka-go/sasl"
 	"github.com/segmentio/kafka-go/sasl/plain"
