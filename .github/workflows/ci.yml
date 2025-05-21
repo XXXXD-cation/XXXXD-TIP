@@ -53,7 +53,17 @@ jobs:
           fi
       
       # 前端代码规范检查
+      - name: 检查前端目录
+        id: check-frontend
+        run: |
+          if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+            echo "frontend_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "frontend_exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: 设置 Node.js
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
         uses: actions/setup-node@v3
         with:
           node-version: '18'
@@ -61,16 +71,12 @@ jobs:
           cache-dependency-path: 'frontend/package-lock.json'
       
       - name: 安装依赖
-        run: |
-          if [ -d "frontend" ]; then
-            cd frontend && npm ci
-          fi
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
+        run: cd frontend && npm ci
       
       - name: 运行 ESLint
-        run: |
-          if [ -d "frontend" ]; then
-            cd frontend && npm run lint
-          fi
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
+        run: cd frontend && npm run lint
 
   test-backend:
     name: 后端测试
@@ -159,7 +165,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
+      - name: 检查前端目录
+        id: check-frontend
+        run: |
+          if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+            echo "frontend_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "frontend_exists=false" >> $GITHUB_OUTPUT
+          fi
+      
       - name: 设置 Node.js
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
         uses: actions/setup-node@v3
         with:
           node-version: '18'
@@ -167,22 +183,16 @@ jobs:
           cache-dependency-path: 'frontend/package-lock.json'
       
       - name: 安装依赖
-        run: |
-          if [ -d "frontend" ]; then
-            cd frontend && npm ci
-          fi
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
+        run: cd frontend && npm ci
       
       - name: 运行单元测试
-        run: |
-          if [ -d "frontend" ]; then
-            cd frontend && npm run test:unit
-          fi
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
+        run: cd frontend && npm run test:unit
       
       - name: 构建检查
-        run: |
-          if [ -d "frontend" ]; then
-            cd frontend && npm run build
-          fi
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
+        run: cd frontend && npm run build
 
   build:
     name: 构建检查

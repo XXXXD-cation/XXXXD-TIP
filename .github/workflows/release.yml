@@ -53,7 +53,17 @@ jobs:
           fi
       
       # 前端代码规范检查
+      - name: 检查前端目录
+        id: check-frontend
+        run: |
+          if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+            echo "frontend_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "frontend_exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: 设置 Node.js
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
         uses: actions/setup-node@v3
         with:
           node-version: '18'
@@ -61,16 +71,12 @@ jobs:
           cache-dependency-path: 'frontend/package-lock.json'
       
       - name: 安装依赖
-        run: |
-          if [ -d "frontend" ]; then
-            cd frontend && npm ci
-          fi
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
+        run: cd frontend && npm ci
       
       - name: 运行 ESLint
-        run: |
-          if [ -d "frontend" ]; then
-            cd frontend && npm run lint
-          fi
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
+        run: cd frontend && npm run lint
       
       # 后端测试
       - name: 检查Go服务和安装依赖
@@ -97,10 +103,8 @@ jobs:
       
       # 前端测试
       - name: 运行前端测试
-        run: |
-          if [ -d "frontend" ]; then
-            cd frontend && npm run test:unit
-          fi
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
+        run: cd frontend && npm run test:unit
 
   build-and-push:
     name: 构建和推送镜像
@@ -117,6 +121,16 @@ jobs:
             echo "go_exists=true" >> $GITHUB_OUTPUT
           else
             echo "go_exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      # 检查前端目录
+      - name: 检查前端目录
+        id: check-frontend
+        run: |
+          if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+            echo "frontend_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "frontend_exists=false" >> $GITHUB_OUTPUT
           fi
       
       - name: 提取版本信息
@@ -171,6 +185,7 @@ jobs:
       
       # 构建并推送前端镜像
       - name: 设置 Node.js
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
         uses: actions/setup-node@v3
         with:
           node-version: '18'
@@ -178,14 +193,13 @@ jobs:
           cache-dependency-path: 'frontend/package-lock.json'
       
       - name: 构建前端应用
-        run: |
-          if [ -d "frontend" ]; then
-            cd frontend && npm ci && npm run build
-          fi
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
+        run: cd frontend && npm ci && npm run build
       
       - name: 检查Dockerfile并构建前端镜像
+        if: ${{ steps.check-frontend.outputs.frontend_exists == 'true' }}
         run: |
-          if [ -d "frontend" ] && [ -f "frontend/Dockerfile" ]; then
+          if [ -f "frontend/Dockerfile" ]; then
             echo "Frontend Dockerfile found, building image..."
             docker buildx build \
               --platform linux/amd64,linux/arm64 \
