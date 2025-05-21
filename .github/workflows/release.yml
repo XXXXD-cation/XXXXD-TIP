@@ -20,11 +20,26 @@ jobs:
           go-version: '1.21'
           cache: true
       
-      - name: 安装 golangci-lint
-        run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
+      - name: 检查Go模块并安装golangci-lint
+        run: |
+          if [ -f "go.mod" ] || [ -d "service" -a -f "service/go.mod" ]; then
+            echo "Go模块存在，安装golangci-lint..."
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
+          else
+            echo "未找到Go模块，跳过golangci-lint安装"
+          fi
       
       - name: 运行 golangci-lint
-        run: golangci-lint run ./...
+        run: |
+          if [ -f "go.mod" ]; then
+            echo "在根目录运行golangci-lint..."
+            golangci-lint run ./...
+          elif [ -d "service" -a -f "service/go.mod" ]; then
+            echo "在service目录运行golangci-lint..."
+            cd service && golangci-lint run ./...
+          else
+            echo "未找到Go模块，跳过golangci-lint检查"
+          fi
       
       # 前端代码规范检查
       - name: 设置 Node.js
@@ -47,16 +62,26 @@ jobs:
           fi
       
       # 后端测试
-      - name: 安装Go依赖
+      - name: 检查Go服务和安装依赖
         run: |
           if [ -d "service" ]; then
-            cd service && go mod download
+            echo "服务目录存在，安装Go依赖..."
+            if [ -f "service/go.mod" ]; then
+              cd service && go mod download
+            else
+              echo "服务目录中没有go.mod文件，跳过依赖安装"
+            fi
+          else
+            echo "服务目录不存在，跳过后端测试"
           fi
 
       - name: 运行单元测试
         run: |
-          if [ -d "service" ]; then
+          if [ -d "service" ] && [ -f "service/go.mod" ]; then
+            echo "运行Go单元测试..."
             cd service && go test -v ./... -coverprofile=coverage.out
+          else
+            echo "服务目录或go.mod不存在，跳过单元测试"
           fi
       
       # 前端测试
