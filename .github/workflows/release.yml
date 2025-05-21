@@ -1,0 +1,172 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  lint-and-test:
+    name: 代码检查和测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Go 代码规范检查
+      - name: 设置 Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache: true
+      
+      - name: 安装 golangci-lint
+        run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
+      
+      - name: 运行 golangci-lint
+        run: golangci-lint run ./...
+      
+      # 前端代码规范检查
+      - name: 设置 Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+      
+      - name: 安装依赖
+        run: |
+          if [ -d "frontend" ]; then
+            cd frontend && npm ci
+          fi
+      
+      - name: 运行 ESLint
+        run: |
+          if [ -d "frontend" ]; then
+            cd frontend && npm run lint
+          fi
+      
+      # 后端测试
+      - name: 安装Go依赖
+        run: |
+          if [ -d "service" ]; then
+            cd service && go mod download
+          fi
+
+      - name: 运行单元测试
+        run: |
+          if [ -d "service" ]; then
+            cd service && go test -v ./... -coverprofile=coverage.out
+          fi
+      
+      # 前端测试
+      - name: 运行前端测试
+        run: |
+          if [ -d "frontend" ]; then
+            cd frontend && npm run test:unit
+          fi
+
+  build-and-push:
+    name: 构建和推送镜像
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: 提取版本信息
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+            echo "RELEASE_VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          else
+            SHA=$(git rev-parse --short HEAD)
+            echo "VERSION=latest" >> $GITHUB_OUTPUT
+            echo "RELEASE_VERSION=sha-${SHA}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: 登录到 Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      # 构建并推送后端服务镜像
+      - name: 设置 Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: 构建并推送后端服务镜像
+        run: |
+          for service_dir in service/*/; do
+            service_name=$(basename "$service_dir")
+            echo "Building $service_name..."
+            
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
+              -t ${{ secrets.DOCKER_USERNAME }}/tip-${service_name}:${{ steps.version.outputs.VERSION }} \
+              -t ${{ secrets.DOCKER_USERNAME }}/tip-${service_name}:${{ steps.version.outputs.RELEASE_VERSION }} \
+              --push \
+              -f ${service_dir}Dockerfile ${service_dir}
+          done
+      
+      # 构建并推送前端镜像
+      - name: 设置 Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+      
+      - name: 构建前端应用
+        run: |
+          if [ -d "frontend" ]; then
+            cd frontend && npm ci && npm run build
+          fi
+      
+      - name: 构建并推送前端镜像
+        if: hashFiles('frontend/Dockerfile') != ''
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/tip-frontend:${{ steps.version.outputs.VERSION }}
+            ${{ secrets.DOCKER_USERNAME }}/tip-frontend:${{ steps.version.outputs.RELEASE_VERSION }}
+  
+  create-release:
+    name: 创建GitHub发布版本
+    needs: build-and-push
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: 生成变更日志
+        id: changelog
+        run: |
+          PREVIOUS_TAG=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
+          if [ -z "$PREVIOUS_TAG" ]; then
+            git log --pretty=format:"* %s (%h)" > CHANGELOG.md
+          else
+            git log --pretty=format:"* %s (%h)" $PREVIOUS_TAG..HEAD > CHANGELOG.md
+          fi
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          cat CHANGELOG.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
+      - name: 创建GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            ## 变更日志
+            
+            ${{ steps.changelog.outputs.CHANGELOG }}
+            
+            ## Docker镜像
+            
+            所有服务已发布到Docker Hub，使用标签 `${{ github.ref_name }}` 
