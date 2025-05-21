@@ -298,9 +298,9 @@ func TestBaseURL(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// 测试使用绝对路径（不使用BaseURL）
-	// 使用不存在的域名确保请求失败
-	resp, err = client.Get(ctx, "http://this-domain-does-not-exist-123456789.com/fake-path", nil)
-	assert.Error(t, err) // 这个请求会失败，因为域名不存在
+	// 使用一个无效的URL方案来确保请求失败
+	_, err = client.Get(ctx, "invalid://example.com/fake-path", nil)
+	assert.Error(t, err) // 这个请求会失败，因为URL方案无效
 }
 
 func TestURLHandling(t *testing.T) {
