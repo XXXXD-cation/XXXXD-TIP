@@ -1,0 +1,53 @@
+{
+    "index_patterns": ["audit_logs*"],
+    "template": {
+      "settings": {
+        "number_of_shards": 1,
+        "number_of_replicas": 0
+      },
+      "mappings": {
+        "properties": {
+          "timestamp": { 
+            "type": "date" 
+          },
+          "user_id": { 
+            "type": "keyword" 
+          },
+          "username": { 
+            "type": "keyword" 
+          },
+          "action": { 
+            "type": "keyword" 
+          },
+          "target_resource_type": { 
+            "type": "keyword" 
+          },
+          "target_resource_id": { 
+            "type": "keyword" 
+          },
+          "ip_address": { 
+            "type": "ip" 
+          },
+          "status_code": { 
+            "type": "integer" 
+          },
+          "details": {
+            "type": "object",
+            "dynamic": true
+          },
+          "user_agent": { 
+            "type": "text", 
+            "fields": { 
+              "keyword": { 
+                "type": "keyword", 
+                "ignore_above": 256 
+              }
+            }
+          },
+          "service_name": { 
+            "type": "keyword" 
+          }
+        }
+      }
+    }
+  }

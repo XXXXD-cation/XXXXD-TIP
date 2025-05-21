@@ -1,0 +1,84 @@
+{
+    "index_patterns": ["iocs*"],
+    "template": {
+      "settings": {
+        "number_of_shards": 1,
+        "number_of_replicas": 0,
+        "analysis": {
+          "analyzer": {
+            "domain_analyzer": {
+              "type": "custom",
+              "tokenizer": "lowercase",
+              "filter": ["word_delimiter"]
+            }
+          }
+        }
+      },
+      "mappings": {
+        "properties": {
+          "ioc_value": { 
+            "type": "keyword" 
+          },
+          "ioc_value_analyzed": { 
+            "type": "text", 
+            "analyzer": "standard" 
+          },
+          "ioc_type": { 
+            "type": "keyword" 
+          },
+          "threat_score": { 
+            "type": "integer" 
+          },
+          "confidence_score": { 
+            "type": "integer" 
+          },
+          "first_seen": { 
+            "type": "date" 
+          },
+          "last_seen": { 
+            "type": "date" 
+          },
+          "tags": { 
+            "type": "keyword" 
+          },
+          "sources": {
+            "type": "nested",
+            "properties": {
+              "name": { "type": "keyword" },
+              "feed_url": { "type": "keyword" },
+              "import_time": { "type": "date" }
+            }
+          },
+          "enrichment_data": {
+            "type": "object",
+            "dynamic": true,
+            "properties": {
+              "virustotal": {
+                "properties": {
+                  "positives": { "type": "integer" },
+                  "total": { "type": "integer" },
+                  "scan_date": { "type": "date" }
+                }
+              },
+              "geoip": {
+                "properties": {
+                  "country_code": { "type": "keyword" },
+                  "city_name": { "type": "keyword" },
+                  "location": { "type": "geo_point" }
+                }
+              },
+              "whois": { "type": "object", "enabled": false }
+            }
+          },
+          "related_malware_ids": { "type": "keyword" },
+          "related_actor_ids": { "type": "keyword" },
+          "related_ttp_ids": { "type": "keyword" },
+          "related_case_ids": { "type": "keyword" },
+          "status": { "type": "keyword" },
+          "raw_data": { "type": "text", "index": false },
+          "created_at": { "type": "date" },
+          "updated_at": { "type": "date" }
+        }
+      }
+    }
+  }
